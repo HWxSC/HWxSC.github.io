@@ -1,376 +1,331 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>快乐弹窗 · Color Pops</title>
-    <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
-    <script>
-        // 配置Tailwind自定义颜色和字体
-        tailwind.config = {
-            theme: {
-                extend: {
-                    fontFamily: {
-                        sans: ['Microsoft YaHei', 'sans-serif'],
-                    },
-                }
-            }
-        }
-    </script>
-    <style type="text/tailwindcss">
-        @layer utilities {
-            .popup-shadow {
-                box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
-            }
-            .bg-blur {
-                backdrop-filter: blur(8px);
-            }
-        }
-    </style>
-    <style>
-        body, html {
-            margin: 0;
-            padding: 0;
-            overflow: hidden;
-            height: 100%;
-            width: 100%;
-        }
-        /* 验证弹窗样式（背景图+半透明遮罩） */
-        #verify-modal {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            /* 验证弹窗背景图：和主页面一致 */
-            background-image: url('DSCF7355.jpg');
-            background-size: cover;
-            background-position: center;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            z-index: 9999;
-        }
-        /* 半透明遮罩：避免背景图过亮导致文字看不清 */
-        #verify-modal::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.5);
-        }
-        .verify-content {
-            background: rgba(255, 255, 255, 0.9); /* 白色半透明卡片 */
-            padding: 30px;
-            border-radius: 12px;
-            text-align: center;
-            width: 90%;
-            max-width: 400px;
-            position: relative; /* 确保在遮罩之上 */
-            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.2);
-        }
-        .verify-question {
-            font-size: 22px;
-            margin-bottom: 20px;
-            color: #222; /* 深色文字，更清晰 */
-            font-weight: bold;
-        }
-        #verify-input {
-            width: 80%;
-            padding: 12px;
-            margin-bottom: 15px;
-            border: 2px solid #ddd;
-            border-radius: 8px;
-            font-size: 16px;
-            background: white;
-        }
-        #verify-btn {
-            background: #ff6b81; /* 粉色按钮，更温馨 */
-            color: white;
-            border: none;
-            padding: 12px 30px;
-            border-radius: 8px;
-            font-size: 16px;
-            cursor: pointer;
-            transition: background 0.3s;
-            font-weight: bold;
-        }
-        #verify-btn:hover {
-            background: #ff4757;
-        }
-        .error-tip {
-            color: #ff4444;
-            margin-top: 10px;
-            display: none;
-            font-weight: 500;
-        }
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>for小朱</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet" />
 
-        /* 原有弹窗样式 */
-        .popup {
-            position: absolute;
-            border-radius: 8px;
-            cursor: pointer;
-            transition: opacity 0.5s ease-out, transform 0.3s ease-out;
-            transform-origin: center;
-            z-index: 1000;
-            overflow: hidden;
+  <script>
+    // Tailwind 主题扩展
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            love: {
+              pink: '#ff6b8b',
+              blue: '#8ab4f8',
+              light: '#ffe6ef',
+              dark: '#c24166',
+              gold: '#ffd166'
+            }
+          },
+          fontFamily: {
+            romantic: ['"Segoe UI"', 'Roboto', 'system-ui', 'sans-serif']
+          },
+          dropShadow: {
+            heart: '0 8px 20px rgba(255,107,139,.35)'
+          },
+          boxShadow: {
+            glow: '0 0 0 4px rgba(255,107,139,.2), 0 14px 40px rgba(0,0,0,.15)'
+          },
+          keyframes: {
+            float: {
+              '0%,100%': { transform: 'translateY(0)' },
+              '50%': { transform: 'translateY(-10px)' }
+            },
+            pop: {
+              '0%': { transform: 'scale(.95)', opacity: 0 },
+              '100%': { transform: 'scale(1)', opacity: 1 }
+            },
+            confetti: {
+              '0%': { transform: 'translateY(-100vh) rotate(0)' },
+              '100%': { transform: 'translateY(100vh) rotate(720deg)' }
+            }
+          },
+          animation: {
+            float: 'float 3s ease-in-out infinite',
+            pop: 'pop .45s ease-out both',
+            pulseSlow: 'pulse 3s cubic-bezier(0.4,0,0.6,1) infinite'
+          }
         }
-        .popup:hover {
-            transform: scale(1.05);
-        }
-        .popup-content {
-            padding: 12px 14px;
-            user-select: none;
-        }
-        #background {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            z-index: 1;
-            display: none; /* 初始隐藏背景，验证通过后显示 */
-        }
-        #exit-button {
-            position: fixed;
-            bottom: 20px;
-            right: 20px;
-            z-index: 1001;
-            background-color: rgba(255, 255, 255, 0.9);
-            border: none;
-            padding: 10px 16px;
-            border-radius: 30px;
-            cursor: pointer;
-            font-family: 'Microsoft YaHei', sans-serif;
-            font-weight: bold;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
-            transition: all 0.3s ease;
-            display: none; /* 初始隐藏退出按钮，验证通过后显示 */
-        }
-        #exit-button:hover {
-            background-color: white;
-            transform: scale(1.05);
-        }
-    </style>
+      }
+    }
+  </script>
+
+  <style type="text/tailwindcss">
+    @layer utilities {
+      .bg-blur { backdrop-filter: blur(10px); }
+      .text-shadow { text-shadow: 0 2px 8px rgba(0,0,0,.15) }
+      .glass { @apply bg-white/80 dark:bg-white/70 backdrop-blur-xl border border-white/60 shadow-glow; }
+      .btn-base { @apply font-bold rounded-full shadow-lg hover:shadow-xl transition-transform duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2; }
+      .btn-love { @apply btn-base bg-love-pink hover:bg-love-dark text-white focus:ring-love-pink/50; }
+      .btn-ghost { @apply btn-base bg-white/70 hover:bg-white text-gray-700 focus:ring-love-blue/40; }
+      .safe-px { padding-left: max(1rem, env(safe-area-inset-left)); padding-right: max(1rem, env(safe-area-inset-right)); }
+      .safe-py { padding-top: max(1rem, env(safe-area-inset-top)); padding-bottom: max(1rem, env(safe-area-inset-bottom)); }
+    }
+
+    /* 轮播背景（使用你的图片路径） */
+    .bg-slider {
+      animation: slide 22s infinite alternate;
+      background-size: cover;
+      background-position: center;
+    }
+    @keyframes slide {
+      0%   { background-image: url('xiaozhu/0f0b8dcbea5a7156fd9fae174f7c2dac.jpg'); }
+      25%  { background-image: url('xiaozhu/67c4ebac08969fac8c12da38beed0bd8.jpg'); }
+      50%  { background-image: url('xiaozhu/691ea470662c7968a90f473681b91d92.jpg'); }
+      75%  { background-image: url('xiaozhu/c56170642eb563979d2c85f9c04304a3.jpg'); }
+      100% { background-image: url('xiaozhu/e58c8d90d0e101b25aebd99c53b442f9.jpg'); }
+    }
+
+    /* 减少动画：尊重用户偏好 */
+    @media (prefers-reduced-motion: reduce) {
+      .bg-slider { animation: none; }
+      .animate-float, .animate-pulse, .animate-pop { animation: none !important; }
+    }
+  </style>
 </head>
-<body>
-    <!-- 密码验证弹窗（带背景图，初始显示） -->
-    <div id="verify-modal">
-        <div class="verify-content">
-            <div class="verify-question">你喜不喜欢我呀？</div>
-            <input type="text" id="verify-input" placeholder="请输入答案">
-            <button id="verify-btn">提交</button>
-            <div class="error-tip" id="error-tip">答案不对哦～再想想？</div>
+
+<body class="font-romantic min-h-screen overflow-hidden bg-love-light/40">
+  <!-- 背景层 -->
+  <div class="fixed inset-0 bg-slider opacity-80 -z-10"></div>
+  <div class="fixed inset-0 bg-gradient-to-br from-love-pink/30 via-transparent to-love-blue/30 -z-10"></div>
+
+  <!-- 装饰元素（移动端压低密度） -->
+  <div class="pointer-events-none select-none fixed inset-0 md:block hidden">
+    <i class="fa fa-heart text-love-pink text-2xl animate-float absolute top-10 left-10 opacity-70 drop-shadow-heart"></i>
+    <i class="fa fa-star text-love-blue text-2xl animate-float absolute bottom-10 right-10 opacity-70" style="animation-delay:1s"></i>
+    <i class="fa fa-heart-o text-love-pink text-xl animate-float absolute top-1/3 right-1/4 opacity-60" style="animation-delay:2s"></i>
+  </div>
+
+  <!-- 主容器：安全区 + 移动优先宽度 -->
+  <main class="relative z-10 min-h-screen flex items-center justify-center safe-px safe-py p-3">
+    <section class="glass rounded-3xl w-[min(92vw,26rem)] md:w-full md:max-w-xl p-5 md:p-8 animate-pop">
+      <header class="text-center mb-6 md:mb-8">
+        <h1 class="text-[clamp(1.6rem,6vw,2.6rem)] font-extrabold text-love-dark text-shadow mb-1 md:mb-2 leading-tight">
+          <i class="fa fa-heart text-love-pink drop-shadow-heart"></i>
+          心动问答
+        </h1>
+        <p class="text-gray-600 text-sm md:text-base">认真回答每一个问题哦～</p>
+      </header>
+
+      <!-- 问题区 -->
+      <div id="question-container" class="mb-6 md:mb-8">
+        <div class="text-[clamp(1.1rem,4.8vw,1.5rem)] font-semibold text-gray-800 text-center mb-4 md:mb-6 min-h-[72px] md:min-h-[84px] flex items-center justify-center leading-snug">
+          准备好了吗？
         </div>
+      </div>
+
+      <!-- 按钮区：移动端纵向更易点，触控尺寸更大 -->
+      <div id="button-container" class="flex flex-col md:flex-row gap-3 md:gap-4 justify-center">
+        <button id="start-btn" class="btn-love px-6 md:px-8 min-h-[3.25rem] text-base md:text-lg">
+          准备好了 <i class="fa fa-arrow-right ml-2"></i>
+        </button>
+      </div>
+
+      <!-- 进度条 -->
+      <div class="mt-5 md:mt-6">
+        <div class="w-full bg-white/60 rounded-full h-2.5 overflow-hidden">
+          <div id="progress-bar" class="bg-gradient-to-r from-love-pink to-love-blue h-2.5 rounded-full w-0 transition-all duration-500"></div>
+        </div>
+        <p id="progress-text" class="text-center text-gray-600 text-xs md:text-sm mt-2">0/4 个问题</p>
+      </div>
+    </section>
+  </main>
+
+  <!-- 成功弹窗 -->
+  <div id="success-modal" class="fixed inset-0 z-50 grid place-items-center bg-black/70 opacity-0 pointer-events-none transition-opacity duration-500">
+    <div class="glass rounded-3xl p-6 md:p-8 w-[min(92vw,26rem)] md:max-w-md animate-pop">
+      <div class="text-center">
+        <div class="text-love-pink text-4xl md:text-5xl mb-3 md:mb-4 flex items-center justify-center gap-3">
+          <i class="fa fa-heart"></i>
+          <i class="fa fa-heart animate-float"></i>
+          <i class="fa fa-heart"></i>
+        </div>
+        <h2 class="text-[clamp(1.3rem,5vw,1.75rem)] font-bold text-love-dark mb-2">我也喜欢你！</h2>
+        <p class="text-gray-700 mb-5 md:mb-6 text-base leading-relaxed">
+          我就知道你也喜欢我～<br/>以后的每一天，让我们一起走吧！
+        </p>
+        <button id="close-modal" class="btn-ghost px-6 min-h-[3rem]">
+          <i class="fa fa-heart mr-2 text-love-pink"></i> 永远在一起
+        </button>
+      </div>
     </div>
+  </div>
 
-    <!-- 背景图片（初始隐藏） -->
-    <img id="background" src="DSCF7355.jpg" alt="背景图片">
-    
-    <!-- 退出按钮（初始隐藏） -->
-    <button id="exit-button">
-        <i class="fa fa-times mr-2"></i>退出
-    </button>
+  <!-- 背景音乐：自动播放（无开关）。如果被策略拦截，将静默失败。-->
+  <audio id="background-music" autoplay loop preload="auto" playsinline>
+    <source src="qwcxx.mp3" type="audio/mpeg" />
+    您的浏览器不支持音频播放
+  </audio>
 
-    <script>
-        // === 核心：密码验证逻辑 ===
-        const verifyModal = document.getElementById('verify-modal');
-        const verifyInput = document.getElementById('verify-input');
-        const verifyBtn = document.getElementById('verify-btn');
-        const errorTip = document.getElementById('error-tip');
-        const background = document.getElementById('background');
-        const exitButton = document.getElementById('exit-button');
-        const CORRECT_ANSWER = '喜欢'; // 正确答案
+  <script>
+    // ------------------ 问答数据 ------------------
+    const questions = [
+      { question: '你觉得我是个有趣的人吗？', options: [ { text: '当然是', type: 'right' }, { text: '一般般', type: 'wrong' } ] },
+      { question: '和我聊天会让你觉得开心吗？', options: [ { text: '超开心', type: 'right' }, { text: '还好吧', type: 'wrong' } ] },
+      { question: '你喜欢我吗？', options: [ { text: '喜欢呀', type: 'right' }, { text: '不确定', type: 'wrong' } ] },
+      { question: '你愿意做我女朋友吗？', options: [ { text: '好的', type: 'right' }, { text: '不要', type: 'wrong' } ] }
+    ];
 
-        // 验证按钮点击事件
-        verifyBtn.addEventListener('click', checkAnswer);
-        // 回车键触发验证
-        verifyInput.addEventListener('keydown', (e) => {
-            if (e.key === 'Enter') checkAnswer();
-        });
+    // ------------------ DOM 元素 ------------------
+    const questionContainer = document.getElementById('question-container');
+    const buttonContainer = document.getElementById('button-container');
+    const progressBar = document.getElementById('progress-bar');
+    const progressText = document.getElementById('progress-text');
+    const startBtn = document.getElementById('start-btn');
+    const successModal = document.getElementById('success-modal');
+    const closeModal = document.getElementById('close-modal');
+    const backgroundMusic = document.getElementById('background-music');
 
-        // 验证答案函数
-        function checkAnswer() {
-            const userAnswer = verifyInput.value.trim().toLowerCase(); // 不区分大小写
-            const correctAnswerLower = CORRECT_ANSWER.toLowerCase();
-            
-            if (userAnswer === correctAnswerLower) {
-                // 验证通过：隐藏验证弹窗，显示背景和退出按钮，启动弹窗
-                verifyModal.style.display = 'none';
-                background.style.display = 'block';
-                exitButton.style.display = 'block';
-                spawnLoop(); // 启动弹窗循环
-            } else {
-                // 验证失败：显示错误提示，清空输入框
-                errorTip.style.display = 'block';
-                verifyInput.value = '';
-                // 输入框聚焦，方便重新输入
-                verifyInput.focus();
-            }
+    // ------------------ 状态 ------------------
+    let currentQuestionIndex = 0;
+    let refuseCount = 0;
+
+    // ------------------ 音乐：页面进入即尽力自动播放（不展示任何开关） ------------------
+    function forceAutoplay() {
+      try { backgroundMusic.volume = 0.75; } catch(e){}
+      const tryPlay = () => backgroundMusic.play().catch(()=>{});
+      // 直接尝试 + 轻度重试（兼容部分浏览器加载时机）
+      tryPlay();
+      setTimeout(tryPlay, 250);
+      setTimeout(tryPlay, 1200);
+      // 若浏览器需要静音才能自动播，先静音播，缓一缓再尝试取消静音
+      backgroundMusic.muted = true;
+      tryPlay();
+      backgroundMusic.addEventListener('canplay', () => {
+        // 尝试去静音（某些浏览器仍可能拦截，这里不做 UI 提示）
+        try { backgroundMusic.muted = false; tryPlay(); } catch(e){}
+      }, { once: true });
+    }
+    window.addEventListener('load', forceAutoplay, { once: true });
+
+    // ------------------ 进度条 ------------------
+    function updateProgress() {
+      const progress = ((currentQuestionIndex + 1) / questions.length) * 100;
+      progressBar.style.width = `${progress}%`;
+      progressText.textContent = `${currentQuestionIndex + 1}/${questions.length} 个问题`;
+    }
+
+    // ------------------ 渲染当前问题 ------------------
+    function showCurrentQuestion() {
+      const q = questions[currentQuestionIndex];
+      questionContainer.innerHTML = `
+        <div class="text-[clamp(1.1rem,4.8vw,1.5rem)] font-semibold text-gray-800 text-center mb-4 md:mb-6 min-h-[72px] md:min-h-[84px] flex items-center justify-center leading-snug">
+          ${q.question}
+        </div>
+      `;
+
+      // 清空并添加按钮
+      buttonContainer.innerHTML = '';
+      q.options.forEach((opt) => {
+        const btn = document.createElement('button');
+        const isWrong = opt.type === 'wrong';
+        btn.className = `${isWrong ? 'btn-ghost' : 'btn-love'} relative px-6 md:px-8 min-h-[3.25rem] text-base md:text-lg`;
+        btn.textContent = opt.text;
+        btn.dataset.type = opt.type;
+
+        // 最后一题需要特殊 id 以便动画
+        if (currentQuestionIndex === questions.length - 1 && isWrong) btn.id = 'refuse-btn';
+        if (currentQuestionIndex === questions.length - 1 && !isWrong) btn.id = 'accept-btn';
+
+        btn.addEventListener('click', () => handleOptionClick(opt.type));
+        buttonContainer.appendChild(btn);
+      });
+
+      updateProgress();
+    }
+
+    // ------------------ 成功弹窗 ------------------
+    function showSuccessModal() {
+      successModal.style.opacity = '1';
+      successModal.style.pointerEvents = 'auto';
+      spawnConfetti(80);
+      const celebration = new Audio('https://cdn.jsdelivr.net/npm/celebration-sound@1.0.0/celebration.mp3');
+      celebration.play().catch(()=>{});
+    }
+
+    // ------------------ 处理选项点击 ------------------
+    function handleOptionClick(type) {
+      const isLast = currentQuestionIndex === questions.length - 1;
+
+      if (isLast && type === 'wrong') {
+        // 最后一题：点“拒绝”→ 同意变大，拒绝变小
+        refuseCount++;
+        const acceptBtn = document.getElementById('accept-btn');
+        const refuseBtn = document.getElementById('refuse-btn');
+        if (!acceptBtn || !refuseBtn) return;
+
+        const grow = 1 + refuseCount * 0.25;          // 同意按钮放大倍数
+        const shrink = Math.max(0.15, 1 - refuseCount * 0.2); // 拒绝按钮下限缩放
+
+        acceptBtn.style.transform = `scale(${grow})`;
+        acceptBtn.style.zIndex = '2';
+        acceptBtn.classList.add('shadow-glow');
+
+        refuseBtn.style.transform = `scale(${shrink})`;
+        refuseBtn.style.opacity = `${Math.max(0.2, shrink)}`;
+
+        if (shrink <= 0.16) {
+          refuseBtn.remove();
+          acceptBtn.classList.add('w-full', 'py-6', 'text-xl', 'md:text-2xl', 'animate-pulse');
+          acceptBtn.style.transform = 'scale(1.2)';
+          buttonContainer.classList.remove('md:flex-row');
+          buttonContainer.classList.add('justify-center');
         }
+        return;
+      }
 
-        // === 原有弹窗逻辑（不变） ===
-        // 可调参数
-        const INTERVAL_MS = 50;          // 两个弹窗之间的间隔（毫秒）
-        const TTL_MS = 5000;            // 每个弹窗存在的时间（毫秒）
-        const MAX_OPEN = 70;            // 同时存在的最大窗口数
-        const FONT_MIN = 16;
-        const FONT_MAX = 28;
-        const PADDING = { x: 14, y: 12 }; // 文本内边距
-        
-        // 积极短语列表
-        const PHRASES = [
-            "要开心呀 ✨","多喝水 💧","我喜欢你 💖","深呼吸～","今天也很棒！",
-            "早点休息 😴","相信自己 💪","记得吃早餐 🥐","给自己一个微笑 😊",
-            "你值得被爱 💗","别内耗，慢一点","小目标也很酷 ✅","抬头挺胸！",
-            "拥抱变化 🌈","喝点热水？☕","看看天空 ☁️","记得眨眼护眼 👀",
-            "20-20-20 法则 ⏳","补水润喉 💦","和朋友聊聊天 📞","今天也要加油！⚡",
-            "保持好奇 🧭","你的努力会发光 ⭐","不比较，只成长 🌱",
-            "犯错也没关系 🫶","一步一步来 👣","给自己点掌声 👏",
-            "你已经做得很好了 🥰","去晒晒太阳 ☀️","温柔以待 💐",
-            "先完成，再完美 ✅","心怀热爱 🔥","愿所有烦恼都消失","保持好心情",
-            "顺顺利利","祝你顺利","别熬夜哦","记得喝水哦","万事如意","开心每一天",
-            "放松一下吧","照顾好自己","给自己一个拥抱","我想你了","愿一切都刚刚好",
-            "开开心心每一天","元气满满出发！","今天也要笑呀😄","你已经做的很好啦",
-            "加油，你是最棒的","注意安全","记得按时吃饭","不要太累","你是我的骄傲",
-            "辛苦了","慢慢来，不急","愿你被温柔以待","坚持就是胜利","心若在，梦就在",
-            "你是独一无二的","小小的幸福也很重要","你自己就好","生活很美好","珍惜当下",
-            "你是被爱的","每一天都是新的开始","世界因你而美丽","保持初心","你值得最好的",
-            "慢慢变好","你是重要的","今天也要努力呀","别太在意","一切都会如愿","保持善良",
-            "愿你快乐","不忘初心","保持热情","相信奇迹","心之所向","素履以往","人间值得",
-            "未来可期","每一天都值得珍惜","做自己的太阳","静待花开","一切美好都会到来"
-        ];
-
-        // 存储当前打开的弹窗
-        let openPopups = [];
-        let stopFlag = false;
-
-        // 生成明亮的随机颜色
-        function brightColor() {
-            const h = Math.random();
-            const s = 0.65 + Math.random() * 0.3;
-            const v = 0.85 + Math.random() * 0.15;
-            
-            let r, g, b;
-            const i = Math.floor(h * 6);
-            const f = h * 6 - i;
-            const p = v * (1 - s);
-            const q = v * (1 - f * s);
-            const t = v * (1 - (1 - f) * s);
-            
-            switch (i % 6) {
-                case 0: r = v, g = t, b = p; break;
-                case 1: r = q, g = v, b = p; break;
-                case 2: r = p, g = v, b = t; break;
-                case 3: r = p, g = q, b = v; break;
-                case 4: r = t, g = p, b = v; break;
-                case 5: r = v, g = p, b = q; break;
-            }
-            
-            return `#${Math.round(r * 255).toString(16).padStart(2, '0')}${Math.round(g * 255).toString(16).padStart(2, '0')}${Math.round(b * 255).toString(16).padStart(2, '0')}`;
+      if (type === 'right') {
+        currentQuestionIndex++;
+        if (currentQuestionIndex < questions.length) {
+          showCurrentQuestion();
+        } else {
+          showSuccessModal();
         }
-
-        // 根据背景色确定文本颜色（黑或白）
-        function textColorForBg(bgHex) {
-            const r = parseInt(bgHex.slice(1, 3), 16);
-            const g = parseInt(bgHex.slice(3, 5), 16);
-            const b = parseInt(bgHex.slice(5, 7), 16);
-            const luminance = 0.2126 * r + 0.7152 * g + 0.0722 * b;
-            return luminance > 160 ? '#000000' : '#FFFFFF';
+      } else {
+        // 错误（非最后一题）：轻提示
+        const wrongBtn = [...buttonContainer.querySelectorAll('button')].find(b => b.dataset.type === 'wrong');
+        if (wrongBtn) {
+          wrongBtn.textContent = '再想想？';
+          wrongBtn.classList.add('animate-pulse');
+          setTimeout(() => wrongBtn.classList.remove('animate-pulse'), 800);
         }
+      }
+    }
 
-        // 创建一个弹窗
-        function createPopup() {
-            if (stopFlag) return;
-            
-            const msg = PHRASES[Math.floor(Math.random() * PHRASES.length)];
-            const bgColor = brightColor();
-            const textColor = textColorForBg(bgColor);
-            const fontSize = FONT_MIN + Math.floor(Math.random() * (FONT_MAX - FONT_MIN + 1));
-            const fontWeight = Math.random() > 0.5 ? 'bold' : 'normal';
-            
-            const popup = document.createElement('div');
-            popup.className = 'popup popup-shadow';
-            popup.style.backgroundColor = bgColor;
-            
-            const content = document.createElement('div');
-            content.className = 'popup-content';
-            content.textContent = msg;
-            content.style.color = textColor;
-            content.style.fontSize = `${fontSize}px`;
-            content.style.fontWeight = fontWeight;
-            content.style.fontFamily = 'Microsoft YaHei, sans-serif';
-            
-            popup.appendChild(content);
-            document.body.appendChild(popup);
-            
-            const width = popup.offsetWidth;
-            const height = popup.offsetHeight;
-            const maxX = window.innerWidth - width;
-            const maxY = window.innerHeight - height;
-            const x = Math.floor(Math.random() * maxX);
-            const y = Math.floor(Math.random() * maxY);
-            
-            popup.style.left = `${x}px`;
-            popup.style.top = `${y}px`;
-            
-            popup.addEventListener('click', () => {
-                closePopup(popup);
-            });
-            
-            openPopups.push(popup);
-            if (openPopups.length > MAX_OPEN) {
-                const oldest = openPopups.shift();
-                closePopup(oldest);
-            }
-            
-            setTimeout(() => {
-                closePopup(popup);
-            }, TTL_MS);
-        }
+    // ------------------ 纸屑生成 ------------------
+    function spawnConfetti(n = 60) {
+      const colors = ['#ff6b8b', '#8ab4f8', '#ffd166', '#74d3ae', '#b694f6'];
+      for (let i = 0; i < n; i++) {
+        const el = document.createElement('span');
+        el.style.position = 'fixed';
+        el.style.top = '-10vh';
+        el.style.left = Math.random() * 100 + 'vw';
+        el.style.width = '8px';
+        el.style.height = '14px';
+        el.style.background = colors[Math.floor(Math.random() * colors.length)];
+        el.style.opacity = '0.9';
+        el.style.transform = `rotate(${Math.random()*360}deg)`;
+        el.style.borderRadius = '2px';
+        el.style.pointerEvents = 'none';
+        el.style.animation = `confetti ${6 + Math.random()*4}s linear forwards`;
+        document.body.appendChild(el);
+        setTimeout(() => el.remove(), 12000);
+      }
+    }
 
-        // 关闭弹窗
-        function closePopup(popup) {
-            popup.style.opacity = '0';
-            popup.style.transform = 'scale(0.8)';
-            setTimeout(() => {
-                if (popup.parentNode) {
-                    popup.parentNode.removeChild(popup);
-                }
-                const index = openPopups.indexOf(popup);
-                if (index !== -1) {
-                    openPopups.splice(index, 1);
-                }
-            }, 500);
-        }
+    // ------------------ 交互绑定 ------------------
+    startBtn.addEventListener('click', () => {
+      currentQuestionIndex = 0;
+      refuseCount = 0;
+      showCurrentQuestion();
+    });
 
-        // 弹窗循环
-        function spawnLoop() {
-            if (stopFlag) return;
-            createPopup();
-            setTimeout(spawnLoop, INTERVAL_MS);
-        }
-
-        // 停止并清理
-        function stopAll() {
-            stopFlag = true;
-            openPopups.forEach(popup => {
-                closePopup(popup);
-            });
-            openPopups = [];
-            alert('已退出程序');
-        }
-
-        // 绑定退出按钮和ESC键
-        exitButton.addEventListener('click', stopAll);
-        document.addEventListener('keydown', (e) => {
-            if (e.key === 'Escape') {
-                stopAll();
-            }
-        });
-    </script>
+    closeModal.addEventListener('click', () => { location.reload(); });
+    successModal.addEventListener('click', (e) => { if (e.target === successModal) location.reload(); });
+  </script>
 </body>
 </html>
